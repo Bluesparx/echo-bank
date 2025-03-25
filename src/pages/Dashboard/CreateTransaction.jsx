@@ -166,7 +166,7 @@ function CreateTransaction() {
                     <option value="">Select an account</option>
                     {accounts.map((account) => (
                       <option key={account.id} value={account.id}>
-                        {account.accountNumber} - {account.fullName} (Balance: ₹{account.initialDeposit})
+                        {account.accountNumber} - {account.fullName} (Balance: ₹{account.initialBalance})
                       </option>
                     ))}
                   </select>

@@ -6,19 +6,19 @@ const AccountsTable = ({ documents, onDeleteClick }) => {
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch Code</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account #</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IFSC Code</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Number</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Type</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Initial Balance</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {documents.map((doc, i) => (
             <tr key={i} className="hover:bg-gray-50 transition-colors duration-150">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.branchCode}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.ifscCode}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.accountNumber}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{doc.fullName}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.date}</td>
@@ -32,7 +32,7 @@ const AccountsTable = ({ documents, onDeleteClick }) => {
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                ₹{parseInt(doc.initialDeposit).toLocaleString()}
+                ₹{parseInt(doc.initialBalance).toLocaleString()}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <button

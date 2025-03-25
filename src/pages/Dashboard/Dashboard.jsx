@@ -5,6 +5,9 @@ import { firestore } from '@/config/Firebase';
 import { AuthenticatedContext } from '@/context/AuthenticatedContext';
 import { Rings } from "react-loader-spinner";
 import { usePageAnnouncement } from '@/hooks/usePageAnnouncement';
+import { announce } from '@/services/textToSpeech';
+import { useNavigate } from 'react-router-dom';
+import { auth } from '@/config/Firebase';
 
 function Dashboard() {
   const { user } = useContext(AuthenticatedContext)
@@ -13,17 +16,45 @@ function Dashboard() {
   const [totalCredit, setTotalCredit] = useState(0)
   const [totalDebit, setTotalDebit] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [documents, setDocuments] = useState([])
+  const navigate = useNavigate()
 
   // Define available actions for the page
   const availableActions = [
-    'View total accounts and transactions',
-    'Add new accounts',
-    'Add new transaction',
-    'View financial summary',
+    'See your accounts',
+    'View your transactions',
+    'create a new account',
+    'Save a new transaction',
+    'Hear your account summary'
   ];
 
   // Use the page announcement hook
-  usePageAnnouncement('Dashboard', availableActions);
+  usePageAnnouncement('Dashboard Page', availableActions);
+
+  const handleVoiceCommand = (command) => {
+    switch (command.toLowerCase()) {
+      case 'view accounts':
+        navigate('/dashboard/viewAccounts');
+        break;
+      case 'view transactions':
+        navigate('/dashboard/viewTransactions');
+        break;
+      case 'create account':
+        navigate('/dashboard/createAccount');
+        break;
+      case 'create transaction':
+        navigate('/dashboard/createTransaction');
+        break;
+      case 'read summary':
+        readSummary();
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      default:
+        announce('Command not recognized. Please try again.');
+    }
+  };
 
   const readDocs = async () => {
     let arrayAccounts = []
@@ -58,12 +89,60 @@ function Dashboard() {
     setTotalDebit(debit)
     setTotalAccounts(arrayAccounts.length)
     setTotalTransactions(arrayTransactions.length)
+    setDocuments(arrayAccounts)
     setIsLoading(false)
+
+    // Announce the summary
+    if (!isLoading) {
+      const currentBalance = credit - debit;
+      const announcement = `Your dashboard summary: You have ${arrayAccounts.length} accounts and ${arrayTransactions.length} transactions. ` +
+        `Total credits: ${credit.toLocaleString()} rupees, total debits: ${debit.toLocaleString()} rupees. ` +
+        `Current balance: ${currentBalance.toLocaleString()} rupees.`;
+      announce(announcement);
+    }
   }
+
+  const readSummary = () => {
+    if (documents.length === 0) {
+      announce('You have no accounts yet. Say "create account" to create one.');
+      return;
+    }
+
+    let totalBalance = 0;
+    let announcement = 'Your account summary: ';
+    
+    documents.forEach((doc, index) => {
+      totalBalance += parseFloat(doc.balance);
+      announcement += `${doc.accountName} has ${doc.balance} rupees`;
+      if (index < documents.length - 1) {
+        announcement += ', ';
+      }
+    });
+    
+    announcement += `. Total balance: ${totalBalance.toLocaleString()} rupees. ` +
+      `You have ${totalTransactions} transactions with total credits of ${totalCredit.toLocaleString()} rupees and total debits of ${totalDebit.toLocaleString()} rupees.`;
+    
+    announce(announcement);
+  }
+
+  const handleLogout = () => {
+    announce('Logging out...');
+    auth.signOut().then(() => {
+      navigate('/');
+    }).catch((error) => {
+      announce('Error logging out. Please try again.');
+    });
+  };
 
   useEffect(() => {
     readDocs()
   }, [])
+
+  useEffect(() => {
+    if (!isLoading) {
+      readSummary()
+    }
+  }, [isLoading])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -75,6 +154,24 @@ function Dashboard() {
               <span className="text-sm font-medium text-gray-500">Welcome, {user?.displayName || 'User'}</span>
             </div>
           </div>
+
+          {!isLoading && totalAccounts === 0 && (
+            <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome to Echo Bank!</h2>
+                <p className="text-gray-600 mb-6">Let's get started by creating your first account.</p>
+                <Link
+                  to="/dashboard/createAccounts"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Your First Account
+                </Link>
+              </div>
+            </div>
+          )}
           
           <div className="mt-6 grid grid-cols-1 gap-8 sm:grid-cols-2">
             {/* Accounts Card */}

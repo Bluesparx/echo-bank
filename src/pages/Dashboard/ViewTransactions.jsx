@@ -3,6 +3,8 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { firestore } from '@/config/Firebase';
 import { Link } from "react-router-dom"
 import { AuthenticatedContext } from '@/context/AuthenticatedContext';
+import { announce } from '@/services/textToSpeech';
+import { usePageAnnouncement } from '@/hooks/usePageAnnouncement';
 
 function ViewTransactions() {
   const [documents, setDocuments] = useState([])
@@ -11,7 +13,72 @@ function ViewTransactions() {
   const [docId, setDocId] = useState("")
   const [transactionDetail, setTransactionDetail] = useState({})
 
-  const handleClick = (doc) => setDocId(doc.id)
+  const availableActions = [
+    'Say "create transaction" to create a new transaction',
+    'Say "read transactions" to hear your transaction list',
+    'Say "read details" to hear details of the selected transaction',
+    'Say "back to dashboard" to return to dashboard',
+    'Say "refresh" to update the transaction list'
+  ];
+
+  usePageAnnouncement('View Transactions Page', availableActions);
+
+  const handleVoiceCommand = (command) => {
+    switch (command.toLowerCase()) {
+      case 'create transaction':
+        navigate('/dashboard/createTransaction');
+        break;
+      case 'read transactions':
+        readTransactions();
+        break;
+      case 'read details':
+        if (transactionDetail) {
+          readTransactionDetails();
+        } else {
+          announce('Please select a transaction first by saying its number');
+        }
+        break;
+      case 'back to dashboard':
+        navigate('/dashboard');
+        break;
+      case 'refresh':
+        readDocs();
+        break;
+      default:
+        announce('Command not recognized. Please try again.');
+    }
+  };
+
+  const readTransactions = () => {
+    if (documents.length === 0) {
+      announce('You have no transactions yet. Say "create transaction" to create one.');
+      return;
+    }
+
+    let announcement = 'Your transactions are: ';
+    documents.forEach((doc, index) => {
+      announcement += `Transaction ${index + 1}: ${doc.type} of ${doc.amount} dollars`;
+      if (index < documents.length - 1) {
+        announcement += ', ';
+      }
+    });
+    announce(announcement);
+  };
+
+  const readTransactionDetails = () => {
+    if (!transactionDetail) return;
+
+    let announcement = `Transaction details: Type: ${transactionDetail.type}, `;
+    announcement += `Amount: ${transactionDetail.amount} dollars, `;
+    announcement += `Date: ${new Date(transactionDetail.date).toLocaleDateString()}, `;
+    announcement += `Description: ${transactionDetail.description || 'No description'}`;
+    announce(announcement);
+  };
+
+  const handleClick = (doc) => {
+    setDocId(doc.id);
+    announce(`Transaction ${documents.findIndex(d => d.id === doc.id) + 1} selected. Say "read details" to hear more.`);
+  }
   
   const readDocs = async () => {
     let array = []
@@ -21,7 +88,7 @@ function ViewTransactions() {
     const querySnapshot = await getDocs(q);
 
     querySnapshot.forEach((doc) => {
-      array.push(doc.data())
+      array.push({ ...doc.data(), id: doc.id });
     });
     
     setDocuments(array)
@@ -33,13 +100,11 @@ function ViewTransactions() {
   }, [])
 
   useEffect(() => {
-    documents.forEach((doc) => {
-      if (doc.id === docId) {
-        setTransactionDetail(doc)
-        return
-      }
-    })
-  }, [docId])
+    const selectedDoc = documents.find(doc => doc.id === docId);
+    if (selectedDoc) {
+      setTransactionDetail(selectedDoc);
+    }
+  }, [docId, documents])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

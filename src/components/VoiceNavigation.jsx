@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { startListening, stopListening, processVoiceCommand, initSpeechRecognition } from '@/services/speechRecognition';
+import { SpeechRecognition } from '@/services/speechRecognition';
 import { speak, announce, initializeScreenReader } from '@/services/textToSpeech';
 import { AuthenticatedContext } from '@/context/AuthenticatedContext';
 import { auth } from '@/config/Firebase';
@@ -58,17 +58,15 @@ const getNavigationCommands = (isAuthenticated) => {
 };
 
 function VoiceNavigation() {
-  const [isListening, setIsListening] = useState(false);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthenticatedContext);
+  const { startListening, stopListening, isListening, error: speechError } = SpeechRecognition();
 
   useEffect(() => {
-    const speechInitialized = initSpeechRecognition();
     const screenReaderInitialized = initializeScreenReader();
     
-    if (!speechInitialized || !screenReaderInitialized) {
-      setError('Voice features are not supported in your browser');
+    if (!screenReaderInitialized) {
+      announce('Voice features are not supported in your browser');
       return;
     }
 
@@ -110,18 +108,15 @@ function VoiceNavigation() {
   const startNavigation = () => {
     if (isListening) {
       stopListening();
-      setIsListening(false);
       announce('Voice navigation stopped');
     } else {
-      setIsListening(true);
       const commands = getNavigationCommands(isAuthenticated);
       const availableCommands = commands.map(cmd => cmd.phrases[0]).join(', ');
       announce(`Voice navigation started. Available commands: ${availableCommands}`);
       startListening(
+        'navigation',
         handleVoiceCommand,
         (error) => {
-          setError('Voice recognition error. Please try again.');
-          setIsListening(false);
           announce('Voice recognition error. Please try again.');
         }
       );
@@ -153,13 +148,13 @@ function VoiceNavigation() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
         </svg>
       </button>
-      {error && (
+      {speechError && (
         <div className="absolute bottom-full right-0 mb-2 p-2 bg-red-100 text-red-700 rounded-md text-sm">
-          {error}
+          {speechError}
         </div>
       )}
     </div>
   );
 }
 
-export default VoiceNavigation; 
+export default VoiceNavigation;

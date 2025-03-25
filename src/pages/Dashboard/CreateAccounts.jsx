@@ -8,11 +8,10 @@ import { AuthenticatedContext } from '@/context/AuthenticatedContext';
 
 const initialState = {
   fullName: "",
-  CNIC: "",
-  branchCode: "",
+  ifscCode: "",
   accountNumber: "",
   accountType: "Saving",
-  initialDeposit: "",
+  initialBalance: "",
   date: "",
   time: "",
   userId: "",
@@ -44,8 +43,8 @@ function CreateAccounts() {
       });
       return;
     }
-    if (state.CNIC.length !== 13) {
-      toast.error('CNIC length should be 13', {
+    if (state.ifscCode.length !== 4) {
+      toast.error('IFSC Code should be 4 digits', {
         position: "bottom-left",
         autoClose: 5000,
         hideProgressBar: false,
@@ -56,8 +55,8 @@ function CreateAccounts() {
       });
       return;
     }
-    if (state.branchCode > 99) {
-      toast.error('You can use only 99 branches.', {
+    if (state.accountNumber.length < 11 || state.accountNumber.length > 17) {
+      toast.error('Account number should be between 11 to 17 digits', {
         position: "bottom-left",
         autoClose: 5000,
         hideProgressBar: false,
@@ -68,20 +67,8 @@ function CreateAccounts() {
       });
       return;
     }
-    if (state.accountNumber.length !== 9) {
-      toast.error('Your Account number length should be 9', {
-        position: "bottom-left",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-      return;
-    }
-    if (state.initialDeposit < 500) {
-      toast.error('Your initial Deposit is less than 500 PKR.', {
+    if (state.initialBalance < 500) {
+      toast.error('Your initial balance is less than 500 rupees.', {
         position: "bottom-left",
         autoClose: 5000,
         hideProgressBar: false,
@@ -138,9 +125,9 @@ function CreateAccounts() {
     }
     
     // transaction code
-    let { initialDeposit, description } = state
+    let { initialBalance, description } = state
     let transactionData = {
-      amount: initialDeposit,
+      amount: initialBalance,
       description,
       dateCreated: serverTimestamp(),
       id: Math.random().toString(36).slice(2),
@@ -194,25 +181,7 @@ function CreateAccounts() {
                   />
                 </div>
                 
-                {/* CNIC */}
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                    </svg>
-                  </div>
-                  <input 
-                    type="number" 
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                    placeholder="CNIC Number (length should be 13)"
-                    name="CNIC"
-                    value={state.CNIC}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                {/* Branch Code */}
+                {/* IFSC Code */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -222,9 +191,9 @@ function CreateAccounts() {
                   <input 
                     type="number" 
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                    placeholder="Branch Code (1 - 99)"
-                    name="branchCode"
-                    value={state.branchCode}
+                    placeholder="IFSC Code (4 digits)"
+                    name="ifscCode"
+                    value={state.ifscCode}
                     onChange={handleChange}
                     required
                   />
@@ -240,7 +209,7 @@ function CreateAccounts() {
                   <input 
                     type="number" 
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                    placeholder="Account Number (Length should be 9)"
+                    placeholder="Account Number (11-17 digits)"
                     name="accountNumber"
                     value={state.accountNumber}
                     onChange={handleChange}
@@ -267,7 +236,7 @@ function CreateAccounts() {
                   </select>
                 </div>
                 
-                {/* Initial Deposit */}
+                {/* Initial Balance */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -277,9 +246,9 @@ function CreateAccounts() {
                   <input 
                     type="number" 
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                    placeholder="Initial Deposit (Minimum 500 Rs.)"
-                    name="initialDeposit"
-                    value={state.initialDeposit}
+                    placeholder="Initial Balance (Minimum 500 rupees)"
+                    name="initialBalance"
+                    value={state.initialBalance}
                     onChange={handleChange}
                     required
                   />

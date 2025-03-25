@@ -10,13 +10,14 @@ import {
   signInWithPopup, 
   GoogleAuthProvider
 } from "firebase/auth";
-import { startListening, stopListening } from '@/services/speechRecognition';
+import { SpeechRecognition } from '@/services/speechRecognition';
 import { speak, announce } from '@/services/textToSpeech';
 import { usePageAnnouncement } from '@/hooks/usePageAnnouncement';
 
 const initialState = { email: "", password: "" }
 
 function Login() {
+  const { startListening, stopListening, isListening, error } = SpeechRecognition();
   const [formData, setFormData] = useState(initialState)
   const [user, setUser] = useState({})
   const [isPasswordShow, setIsPasswordShow] = useState(false)
@@ -26,8 +27,7 @@ function Login() {
     password: false
   })
   const timeoutRef = React.useRef(null);
-  const { isAuthenticated, setIsAuthenticated } = useContext(AuthenticatedContext);
-  const { userId, setUserId } = useContext(AuthenticatedContext);
+  const { isAuthenticated, setIsAuthenticated, userId, setUserId } = useContext(AuthenticatedContext);
   const navigate = useNavigate();
 
   const availableActions = [
@@ -41,7 +41,7 @@ function Login() {
   usePageAnnouncement('Login Page', availableActions);
 
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user)
         setUserId(user.uid)
@@ -49,7 +49,9 @@ function Login() {
         setUser({})
       }
     });
-  }, [])
+
+    return () => unsubscribe();
+  }, [setUserId])
 
   useEffect(() => {
     return () => {
@@ -67,12 +69,33 @@ function Login() {
     }));
   }
 
-  const handleVoiceInput = (field, value) => {
+  const handleVoiceInput = (transcript) => {
+    // Process the transcript before setting form data
+    let processedTranscript = transcript
+      .toLowerCase() // Ensure everything is lowercase first
+      .replace(/\b(at the rate|at)\b/g, '@') // Convert "at the rate" or "at" to @
+      .replace(/\b(dot|period)\b/g, '.') // Convert "dot" or "period" to .
+      .replace(/\b(underscore|under score)\b/g, '_') // Convert "underscore" to _
+      .replace(/\b(hyphen|dash)\b/g, '-') // Convert "hyphen" or "dash" to -
+      .replace(/\s+/g, '') // Remove all spaces
+      .trim();
+
+    // Convert number words to digits
+    const numberWords = {
+      'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+      'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9'
+    };
+    Object.entries(numberWords).forEach(([word, digit]) => {
+      processedTranscript = processedTranscript.replace(new RegExp(word, 'g'), digit);
+    });
+
+    // Handle uppercase letters only when specifically requested
+    processedTranscript = processedTranscript.replace(/upper case ([a-z])/g, (match, letter) => letter.toUpperCase());
+
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [activeField]: processedTranscript
     }));
-    announce(`${field} received`);
   };
 
   const startVoiceInput = (field) => {
@@ -103,7 +126,7 @@ function Login() {
       }));
       announce(`${field}`);
       startListening(
-        (transcript) => handleVoiceInput(field, transcript),
+        (transcript) => handleVoiceInput(transcript),
         (error) => {
           announce('Voice recognition error. Please try again.');
           setListeningStates(prev => ({

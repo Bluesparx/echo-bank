@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import { usePageAnnouncement } from '@/hooks/usePageAnnouncement';
+import { SpeechRecognition } from '@/services/speechRecognition';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -20,6 +21,7 @@ function ForgotPassword() {
 
   usePageAnnouncement('Forgot Password Page', availableActions);
 
+  const { startListening, stopListening, isListening, error } = SpeechRecognition();
   const navigate = useNavigate()
   const handleClick = (e) => {
     e.preventDefault();

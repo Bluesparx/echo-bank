@@ -5,13 +5,14 @@ import { auth, provider } from "@/config/Firebase"
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AuthenticatedContext } from '@/context/AuthenticatedContext';
-import { startListening, stopListening } from '@/services/speechRecognition';
+import { SpeechRecognition } from '@/services/speechRecognition';
 import { speak, announce } from '@/services/textToSpeech';
 import { usePageAnnouncement } from '@/hooks/usePageAnnouncement';
 
 const initialState = { email: "", password: "", confirmPassword: "", name: "" }
 
 function SignUp() {
+  const { startListening, stopListening, isListening, error } = SpeechRecognition();
   const { setIsAuthenticated } = useContext(AuthenticatedContext);
   const navigate = useNavigate();
   const [state, setState] = useState(initialState)
@@ -26,11 +27,11 @@ function SignUp() {
   })
 
   const availableActions = [
-    'Enter name, email, and password to create account',
-    'Use voice input the fields',
-    'Sign up with Google',
-    'Return to login page',
-    'Return to home page'
+    'Enter email and password to sign in',
+    'Use voice input for the fields',
+    'Sign Up with Google',
+    'Return to home page',
+    'Go to Login',
   ];
 
   usePageAnnouncement('Sign Up Page', availableActions);
@@ -70,7 +71,7 @@ function SignUp() {
         ...prev,
         [field]: true
       }));
-      announce(`Listening for ${field}`);
+      announce(`enter ${field}`);
       startListening(
         (transcript) => handleVoiceInput(field, transcript),
         (error) => {

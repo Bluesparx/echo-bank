@@ -1,12 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { announce, initializeScreenReader, speak } from '@/services/textToSpeech';
 import { stopSpeaking } from '@/services/textToSpeech';
-import { stopListening } from '@/services/speechRecognition';
+import { SpeechRecognition } from '@/services/speechRecognition';
 
 export const usePageAnnouncement = (pageTitle, availableActions = []) => {
+  const hasAnnounced = useRef(false);
+  const { stopListening } = SpeechRecognition();
   useEffect(() => {
-    // Initialize screen reader and make announcement
     const initializeAndAnnounce = async () => {
+      if (hasAnnounced.current) return;
+
       try {
         // Stop any ongoing speech and recognition
         stopSpeaking();
@@ -19,7 +22,6 @@ export const usePageAnnouncement = (pageTitle, availableActions = []) => {
           return;
         }
 
-        // Create the announcement string
         let announcement = '';
         
         // Special handling for landing page
@@ -41,24 +43,27 @@ export const usePageAnnouncement = (pageTitle, availableActions = []) => {
 
         // Use speak instead of announce for homepage to ensure it works on first load
         if (pageTitle.toLowerCase() === 'homepage') {
-          announce(announcement);
+          announce(announcement, true); // Set urgent to true for homepage
         } else {
           announce(announcement, false); // Set urgent to false for non-homepage announcements
         }
+
+        // Mark that we've announced for this page
+        hasAnnounced.current = true;
       } catch (error) {
         console.error('Error in page announcement:', error);
       }
     };
 
-    // Run the initialization and announcement
     initializeAndAnnounce();
+  }, [pageTitle]); // Only depend on pageTitle, not availableActions
 
-    // Cleanup function to stop speech when component unmounts
+  // Reset the ref when the component unmounts
+  useEffect(() => {
     return () => {
-      stopSpeaking();
-      stopListening();
+      hasAnnounced.current = false;
     };
-  }, [pageTitle, availableActions]);
+  }, []);
 };
 
 // Helper function to extract readable text from DOM

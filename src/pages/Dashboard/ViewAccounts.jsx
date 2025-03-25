@@ -4,6 +4,8 @@ import { firestore } from '@/config/Firebase';
 import { Link } from "react-router-dom"
 import { AuthenticatedContext } from '@/context/AuthenticatedContext';
 import { toast } from 'react-toastify';
+import { announce } from '@/services/textToSpeech';
+import { usePageAnnouncement } from '@/hooks/usePageAnnouncement';
 
 // Import components
 import AccountsTable from '@/components/accounts/AccountsTable';
@@ -15,6 +17,17 @@ function ViewAccounts() {
   const { user } = useContext(AuthenticatedContext)
   const [accountToDelete, setAccountToDelete] = useState(null)
 
+  const availableActions = [
+    'Say "create account" to create a new account',
+    'Say "read accounts" to hear your account list',
+    'Say "delete account" to delete an account',
+    'Say "back to dashboard" to return to dashboard',
+    'Say "refresh" to update the account list'
+  ];
+
+  usePageAnnouncement('View Accounts Page', availableActions);
+
+
   const readDocs = async () => {
     let array = []
     const accountsRef = collection(firestore, "accounts");
@@ -23,7 +36,7 @@ function ViewAccounts() {
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      array.push({ ...data, id: doc.id }); // Make sure to include the document ID
+      array.push({ ...data, id: doc.id });
     });
 
     setDocuments(array)
@@ -36,6 +49,7 @@ function ViewAccounts() {
 
   const handleDeleteClick = (account) => {
     setAccountToDelete(account)
+    announce(`Delete account ${account.accountName}? Say "confirm delete" to proceed or "cancel" to cancel.`);
   }
 
   const handleDelete = async () => {
@@ -43,6 +57,7 @@ function ViewAccounts() {
     
     try {
       await deleteDoc(doc(firestore, "accounts", accountToDelete.id));
+      announce(`Account ${accountToDelete.accountName} deleted successfully`);
       toast.success("Account Deleted Successfully!", {
         position: "top-right",
         autoClose: 5000,
@@ -51,21 +66,11 @@ function ViewAccounts() {
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-      })
-      
-      setDocuments(documents.filter(doc => doc.id !== accountToDelete.id))
-      setAccountToDelete(null)
+      });
+      readDocs();
     } catch (error) {
+      announce('Error deleting account. Please try again.');
       console.error("Error deleting account:", error);
-      toast.error("Failed to delete account. Please try again.", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      })
     }
   }
 

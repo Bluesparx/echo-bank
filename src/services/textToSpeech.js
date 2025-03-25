@@ -1,6 +1,8 @@
-import { stopListening } from './speechRecognition';
+import { SpeechRecognition } from './speechRecognition';
 const speechSynthesis = window.speechSynthesis;
 let selectedVoice = null;
+let lastAnnouncement = '';
+let announcementTimeout = null;
 
 export const initializeScreenReader = async () => {
   if (!speechSynthesis) {
@@ -109,22 +111,36 @@ const convertEmailToSpeech = (email) => {
   return `${speechLocalPart} at ${speechDomain}`;
 };
 
-export const announce = (message) => {
+export const announce = (message, urgent = true) => {
   if (!speechSynthesis) return;
   
-  speechSynthesis.cancel();
-  stopListening();
-  
-  if (message.includes('field received')) {
-    const utterance = new SpeechSynthesisUtterance(message);
-    utterance.voice = selectedVoice;
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 0.8;
-    speechSynthesis.speak(utterance);
-  } else {
-    speak(message);
+  // Clear any pending announcement
+  if (announcementTimeout) {
+    clearTimeout(announcementTimeout);
   }
+  
+  // If it's the same message as the last announcement and not urgent, skip it
+  if (message === lastAnnouncement && !urgent) {
+    return;
+  }
+
+  // Stop any ongoing speech
+  speechSynthesis.cancel();
+  
+  // Set a timeout to allow the new announcement
+  announcementTimeout = setTimeout(() => {
+    if (message.includes('field received')) {
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.voice = selectedVoice;
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 0.8;
+      speechSynthesis.speak(utterance);
+    } else {
+      speak(message);
+    }
+    lastAnnouncement = message;
+  }, urgent ? 0 : 100);
 };
 
 const getAvailableVoices = () => {
